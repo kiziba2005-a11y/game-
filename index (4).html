@@ -1,0 +1,470 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Funny Challenge Bags Game</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #f0f8ff;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+      color: #333;
+    }
+    .banner {
+      font-size: 1.5em;
+      background-color: #ff69b4;
+      color: #fff;
+      padding: 1rem;
+      text-align: center;
+      font-weight: bold;
+      margin: 10px 0;
+    }
+    .access-denied-banner {
+      font-size: 1.4em;
+      background-color: #ff4500;
+      color: #fff;
+      padding: 1rem;
+      margin: 10px 0;
+      border-radius: 5px;
+      font-weight: bold;
+    }
+    h1 {
+      color: #ff69b4;
+      font-size: 2.5em;
+      margin-bottom: 10px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      gap: 10px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .bag {
+      background-color: #ffd700;
+      border: 2px solid #ff4500;
+      border-radius: 10px;
+      font-size: 1.2em;
+      cursor: pointer;
+      transition: transform 0.3s, background-color 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 60px;
+    }
+    .bag:hover {
+      transform: scale(1.1);
+      background-color: #ffa500;
+    }
+    .bag:active {
+      animation: openBag 0.5s;
+    }
+    .bag.disabled {
+      background-color: #ccc;
+      border-color: #999;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .bag.disabled:hover {
+      background-color: #ccc;
+      transform: none;
+    }
+    @keyframes openBag {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.2); }
+      100% { transform: scale(1); }
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.4);
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content {
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      max-width: 500px;
+      text-align: center;
+    }
+    .close {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .close:hover {
+      color: #000;
+    }
+    .challenge-text {
+      font-size: 1.5em;
+      margin: 20px 0;
+      color: #ff69b4;
+    }
+    input[type="password"] {
+      margin: 10px 0;
+      padding: 10px;
+      width: 80%;
+    }
+    button {
+      padding: 10px 20px;
+      background-color: #ff69b4;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #ff1493;
+    }
+  </style>
+</head>
+<body>
+  <div class="banner">This game is developed by PACY from APAER SCHOOL for more information call 0790078685</div>
+  <h1>Funny Challenge Bags!</h1>
+  <div class="access-denied-banner">Pay 500FRW to Pacy if you need full access to this game.</div>
+  <p>Click a bag to reveal a hilarious challenge. Laugh out loud!</p>
+  <div class="grid" id="bagGrid"></div>
+
+  <!-- Challenge Modal -->
+  <div id="challengeModal" class="modal">
+    <div class="modal-content">
+      <span class="close" id="closeModal">&times;</span>
+      <p class="challenge-text" id="challengeText"></p>
+    </div>
+  </div>
+
+  <!-- Password Modal -->
+  <div id="passwordModal" class="modal">
+    <div class="modal-content">
+      <span class="close" id="closePassword">&times;</span>
+      <p>Time limit exceeded. Call Pacy for the password: 0790078685</p>
+      <div class="access-denied-banner">Pay 500FRW to Pacy if you need full access to this game.</div>
+      <input type="password" id="passwordInput" placeholder="Enter password">
+      <button id="submitPassword">Submit</button>
+    </div>
+  </div>
+
+  <!-- Cooldown Modal -->
+  <div id="cooldownModal" class="modal">
+    <div class="modal-content">
+      <span class="close" id="closeCooldown">&times;</span>
+      <p>You can't open another bag until the 5-minute wait time is reached.</p>
+    </div>
+  </div>
+
+  <div class="banner" style="margin-top: 20px;">This game is developed by PACY from APAER SCHOOL for more information call 0790078685</div>
+
+  <script>
+    const challenges = [
+      "1. Pretend you're a robot trying to dance ballet {Gerageza dansa nk’uroboti}",
+      "2. Sing your favorite song in a funny voice {Rimba indirimbo yawe y’iseke}",
+      "3. Act like a monkey eating a banana {Kora nk’inkende ikurya ibihogo}",
+      "4. Try to lick your elbow {Gerageza kuruka inkota yawe}",
+      "5. Speak in rhymes for the next minute {Vuga mu mirongo ku miniti ikurikira}",
+      "6. Do the chicken dance {Kora dansi y’inkoko}",
+      "7. Imitate a famous celebrity badly {Ikurikira umuntu uzwi kubi}",
+      "8. Tell a joke that's so bad it's good {Vuga inyaya ryibi ryoroshye}",
+      "9. Pretend to be a superhero with a silly power {Iyumvira ko uri superhero y’iseke}",
+      "10. Make the funniest face you can {Kora uso ry’iseke ryinshi}",
+      "11. Pretend to be a fish out of water {Iyumvira ko uri ifi itari mu mazi}",
+      "12. Do an impression of a baby learning to dance {Kora impression y’umwana yigisha dansa}",
+      "13. Eat a snack without using your hands {Rya ibiryo utashaka mikono}",
+      "14. Talk like a pirate for 30 seconds {Vuga nk’umunyamaraso amasegonda 30}",
+      "15. Dance like no one's watching, but everyone is {Dansa nk’aho nta muntu ureba}",
+      "16. Recite the alphabet backwards as fast as you can {Soma alfabeti inyuma vuba}",
+      "17. Pretend to be a cat chasing a laser pointer {Iyumvira ko uri pusi ikurikirana laser}",
+      "18. Make up a silly song about your day {Kora indirimbo y’iseke ku munsi wawe}",
+      "19. Act out your favorite meme {Kora meme yawe y’ihangare}",
+      "20. Try to juggle three items (safely!) {Gerageza kujugunya ibintu bitatu}",
+      "21. Imitate a penguin walking {Ikurikira penguin itembera}",
+      "22. Speak in slow motion {Vuga mu buryo buhoro}",
+      "23. Pretend you're stuck in quicksand {Iyumvira ko uri mu isarasi}",
+      "24. Do a silly victory dance {Kora dansi y’iseke y’intsinde}",
+      "25. Tell your life story in 10 seconds {Vuga amateka yawe mu masegonda 10}",
+      "26. Act like you're in a soap opera {Kora nk’aho uri mu soap opera}",
+      "27. Try to pat your head and rub your belly at the same time {Gerageza gukubita umutwe no gusugura inda}",
+      "28. Make animal noises for each letter of the alphabet {Kora amajwi y’ibinyabuzima ku herufabeti}",
+      "29. Pretend to be a news anchor reporting silly news {Iyumvira ko uri umunyamakuru utanga amakuru y’iseke}",
+      "30. Do the robot dance {Kora dansi ya roboti}",
+      "31. Sing opera about brushing your teeth {Rimba opera ku menyo}",
+      "32. Act like a squirrel collecting nuts {Kora nk’inkwavu ikusanya ibyanya}",
+      "33. Try to say tongue twisters {Gerageza kuvuga ibyivugo by’ururimi}",
+      "34. Pretend you're a ghost scaring someone {Iyumvira ko uri umuzimu utera ubwoba}",
+      "35. Dance with an imaginary partner {Dansa n’umuntu w’iyumviro}",
+      "36. Recite a poem about cheese {Soma ikirango cy’ifromage}",
+      "37. Imitate a frog jumping {Ikurikira igikeri kirarata}",
+      "38. Talk like Yoda from Star Wars {Vuga nk’Yoda mu Star Wars}",
+      "39. Pretend to be a chef cooking a crazy meal {Iyumvira ko uri chef ikora ibiryo by’ubwenge}",
+      "40. Do push-ups while singing a nursery rhyme {Kora push-ups uririmba indirimbo y’abana}",
+      "41. Act out being chased by bees {Kora nk’ukurikiranwa n’inzuki}",
+      "42. Speak only using questions for a minute {Vuga gusa ukitse ibibazo ku miniti}",
+      "43. Pretend you're a puppet on strings {Iyumvira ko uri umupeti ku mirongo}",
+      "44. Make up funny excuses for being late {Kora ibisubizo by’iseke byo gutinda}",
+      "45. Imitate different accents badly {Ikurikira amajwi atandukanye kubi}",
+      "46. Do a moonwalk {Kora moonwalk}",
+      "47. Pretend to be a detective solving a mystery {Iyumvira ko uri detektive isha ibyibanze}",
+      "48. Sing happy birthday to yourself in a weird voice {Rimba isabukuru yawe n’ijwi ry’ihariye}",
+      "49. Act like you're in zero gravity {Kora nk’aho uri mu zeru gravity}",
+      "50. Tell knock-knock jokes {Vuga inyaya za knock-knock}",
+      "51. Pretend to ride an invisible bicycle {Iyumvira ko ugendera kuri bisi ya invisible}",
+      "52. Do impressions of cartoon characters {Kora impressions za cartoon}",
+      "53. Eat something sour and react dramatically {Rya ikintu cy’umutsi ukore dramatically}",
+      "54. Speak backwards {Vuga inyuma}",
+      "55. Act like a superhero failing at powers {Kora nk’ superhero itabasha powers}",
+      "56. Dance to no music {Dansa nta muzika}",
+      "57. Pretend you're a mime in a box {Iyumvira ko uri mime mu kabati}",
+      "58. Make funny sound effects for actions {Kora amajwi y’iseke ku bikorwa}",
+      "59. Imitate a baby animal {Ikurikira umwana w’inyamaswa}",
+      "60. Try to whistle with crackers in mouth (pretend) {Gerageza gusubiriza n’ibisuguti mu kanwa}",
+      "61. Act out a slow-motion fight scene {Kora scene yo kurwana mu buryo buhoro}",
+      "62. Speak like a valley girl {Vuga nk’umukobwa wa valley}",
+      "63. Pretend to be a mad scientist {Iyumvira ko uri umuhanga w’ubwenge}",
+      "64. Do silly yoga poses {Kora yoga y’iseke}",
+      "65. Tell a story using only gestures {Vuga inkuru ukoresha amashusho}",
+      "66. Imitate walking on hot coals {Ikurikira gutambuka ku makara ashyushye}",
+      "67. Sing a song with made-up words {Rimba indirimbo n’amagambo y’ubuvanganzo}",
+      "68. Act like you're shrinking {Kora nk’aho ugabanya ubunini}",
+      "69. Pretend to be a tour guide in your room {Iyumvira ko uri guide mu cyumba cyawe}",
+      "70. Do the floss dance {Kora dansi ya floss}",
+      "71. Speak in third person for a minute {Vuga mu muntu wa gatatu ku miniti}",
+      "72. Act out slipping on a banana peel {Kora nk’ukuzamuka ku gishishwa}",
+      "73. Try to draw with your non-dominant hand {Gerageza gushushanya n’ukuboko k’idari dominant}",
+      "74. Pretend you're a rock star performing {Iyumvira ko uri rock star ikina}",
+      "75. Make up a rap about vegetables {Kora rap ku mboga}",
+      "76. Imitate a duck quacking Shakespeare {Ikurikira inkware iririmba Shakespeare}",
+      "77. Dance like a dad at a wedding {Dansa nk’umubyeyi mu bukwe}",
+      "78. Pretend to be invisible {Iyumvira ko uri invisible}",
+      "79. Tell puns about animals {Vuga puns ku binyabuzima}",
+      "80. Act like you're in a horror movie but it's comedy {Kora nk’aho uri mu filime y’ubwoba ariko comedy}",
+      "81. Do an air guitar solo {Kora air guitar solo}",
+      "82. Speak like a robot {Vuga nk’uroboti}",
+      "83. Pretend to be a time traveler {Iyumvira ko uri umu voyager mu gihe}",
+      "84. Make funny faces in a mirror {Kora uso ry’iseke mu kirore}",
+      "85. Act out eating spicy food {Kora nk’urya ibiryo by’umuriro}",
+      "86. Sing in whispers {Rimba mu kwibwira}",
+      "87. Imitate a cowboy {Ikurikira cowboy}",
+      "88. Pretend you're on a rollercoaster {Iyumvira ko uri ku rollercoaster}",
+      "89. Tell a fairy tale with a twist {Vuga inkuru y’imigani n’ihinduka}",
+      "90. Do silly impressions of friends {Kora impressions y’iseke y’inshuti}",
+      "91. Act like a zombie dancing {Kora nk’izombi idansa}",
+      "92. Speak with your mouth full (pretend) {Vuga n’umunwa wuzura (iyumvira)}",
+      "93. Pretend to be a weather reporter in a storm {Iyumvira ko uri umunyamakuru w’ikirere mu mbura}",
+      "94. Make up dances for emotions {Kora dansi z’amarangamutima}",
+      "95. Imitate a video game character {Ikurikira umukinnyi wa video game}",
+      "96. Try to hula hoop invisibly {Gerageza hula hoop ya invisible}",
+      "97. Act out a comedy skit {Kora comedy skit}",
+      "98. Sing opera in the shower (pretend) {Rimba opera mu douche (iyumvira)}",
+      "99. Pretend you're a spy on a mission {Iyumvira ko uri umusirikari ku ngendo}",
+      "100. Do the worm dance {Kora dansi ya worm}"
+    ];
+
+    // Create grid
+    const grid = document.getElementById('bagGrid');
+    const bags = [];
+    for (let i = 0; i < 100; i++) {
+      const bag = document.createElement('div');
+      bag.classList.add('bag');
+      bag.textContent = `${i + 1} 🛍️`;
+      bag.dataset.index = i;
+      bag.addEventListener('click', openChallenge);
+      grid.appendChild(bag);
+      bags.push(bag);
+    }
+
+    // Modal elements
+    const challengeModal = document.getElementById('challengeModal');
+    const closeChallengeModal = document.getElementById('closeModal');
+    const challengeText = document.getElementById('challengeText');
+
+    const passwordModal = document.getElementById('passwordModal');
+    const closePassword = document.getElementById('closePassword');
+    const submitPassword = document.getElementById('submitPassword');
+    const passwordInput = document.getElementById('passwordInput');
+
+    const cooldownModal = document.getElementById('cooldownModal');
+    const closeCooldown = document.getElementById('closeCooldown');
+
+    // Timing and state variables
+    let startTime = Date.now();
+    let lastOpenTime = 0;
+    let isBlocked = false;
+    let isProcessing = false;
+    let isInCooldown = false;
+
+    // Update bag states (enable/disable)
+    function updateBagStates() {
+      const now = Date.now();
+      if (isInCooldown || (lastOpenTime !== 0 && now - lastOpenTime < 5 * 60 * 1000)) {
+        bags.forEach(bag => {
+          bag.classList.add('disabled');
+          bag.removeEventListener('click', openChallenge);
+          bag.addEventListener('click', showCooldownModal);
+        });
+        isInCooldown = true;
+      } else {
+        bags.forEach(bag => {
+          bag.classList.remove('disabled');
+          bag.removeEventListener('click', showCooldownModal);
+          bag.addEventListener('click', openChallenge);
+        });
+        isInCooldown = false;
+      }
+      console.log(`Bag states updated: isInCooldown=${isInCooldown}, time since last open=${now - lastOpenTime}ms`);
+    }
+
+    // Show cooldown modal
+    function showCooldownModal() {
+      challengeModal.style.display = 'none';
+      passwordModal.style.display = 'none';
+      cooldownModal.style.display = 'flex';
+      console.log('Cooldown modal shown');
+    }
+
+    closeChallengeModal.addEventListener('click', () => {
+      challengeModal.style.display = 'none';
+      console.log('Challenge modal closed');
+    });
+
+    closePassword.addEventListener('click', () => {
+      passwordModal.style.display = 'none';
+      console.log('Password modal closed');
+    });
+
+    closeCooldown.addEventListener('click', () => {
+      cooldownModal.style.display = 'none';
+      console.log('Cooldown modal closed');
+    });
+
+    window.addEventListener('click', (e) => {
+      if (e.target === challengeModal) {
+        challengeModal.style.display = 'none';
+        console.log('Challenge modal closed via background click');
+      }
+      if (e.target === passwordModal) {
+        passwordModal.style.display = 'none';
+        console.log('Password modal closed via background click');
+      }
+      if (e.target === cooldownModal) {
+        cooldownModal.style.display = 'none';
+        console.log('Cooldown modal closed via background click');
+      }
+    });
+
+    submitPassword.addEventListener('click', () => {
+      const pass = passwordInput.value;
+      if (pass === 'pacy1/1/2005') {
+        passwordModal.style.display = 'none';
+        startTime = Date.now(); // Reset playtime timer
+        isBlocked = false;
+        isInCooldown = false;
+        lastOpenTime = 0; // Reset cooldown timer
+        passwordInput.value = '';
+        updateBagStates();
+        console.log('Password accepted, timers reset');
+      } else {
+        alert('Incorrect password. Please try again.');
+        console.log('Incorrect password entered');
+      }
+    });
+
+    function openChallenge(e) {
+      if (isBlocked || isProcessing || isInCooldown) {
+        if (isInCooldown) {
+          challengeModal.style.display = 'none';
+          passwordModal.style.display = 'none';
+          cooldownModal.style.display = 'flex';
+          console.log('Cooldown modal triggered from openChallenge');
+        }
+        return;
+      }
+
+      isProcessing = true;
+      const now = Date.now();
+
+      // Check 30-minute playtime limit
+      if (now - startTime > 30 * 60 * 1000) {
+        isBlocked = true;
+        challengeModal.style.display = 'none';
+        passwordModal.style.display = 'flex';
+        isProcessing = false;
+        console.log('30-minute limit reached, showing password modal');
+        return;
+      }
+
+      // Check 5-minute cooldown
+      if (lastOpenTime !== 0 && now - lastOpenTime < 5 * 60 * 1000) {
+        challengeModal.style.display = 'none';
+        passwordModal.style.display = 'none';
+        cooldownModal.style.display = 'flex';
+        isInCooldown = true;
+        updateBagStates();
+        isProcessing = false;
+        console.log('Cooldown modal triggered from openChallenge');
+        return;
+      }
+
+      const index = e.target.dataset.index;
+      challengeText.textContent = challenges[index];
+      challengeModal.style.display = 'flex';
+      lastOpenTime = now;
+      isInCooldown = true;
+      updateBagStates();
+      isProcessing = false;
+      console.log(`Bag ${index} opened, cooldown started`);
+    }
+
+    // Periodically update bag states
+    setInterval(updateBagStates, 1000);
+  </script>
+</body>
+</html>
